@@ -6,7 +6,8 @@ class Prototype(torch.nn.Module):
     def __init__(self, prototype_num, latent_size) -> None:
         super(Prototype, self).__init__()
         self.latent_size = latent_size
-        self.prototypes = torch.nn.Parameter(data=torch.random(prototype_num, latent_size), requires_grad=True)
+        self.prototype_num = prototype_num
+        self.prototypes = torch.nn.Parameter(data= torch.rand(self.prototype_num, self.latent_size), requires_grad=True) # torch.nn.init.uniform_(torch.zeros(self.prototype_num, self.latent_size))
     
     def forward(self, input):
         """"""

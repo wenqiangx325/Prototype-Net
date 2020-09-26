@@ -6,7 +6,7 @@ from torch.nn.functional import pad
 class Encoder(torch.nn.Module):
     """"""
 
-    def __init__(self, out_size=10) -> None:
+    def __init__(self, out_size) -> None:
         """"""
         super(Encoder, self).__init__()
         self.main = torch.nn.Sequential(
@@ -47,7 +47,7 @@ class Encoder(torch.nn.Module):
 class Decoder(torch.nn.Module):
     """"""
 
-    def __init__(self, in_size=10) -> None:
+    def __init__(self, in_size) -> None:
         """"""
         super(Decoder, self).__init__()
         self.main = torch.nn.Sequential(

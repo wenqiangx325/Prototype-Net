@@ -56,13 +56,13 @@ real_batch = next(iter(dataloader))
 #)
 # plt.show()
 
-encoder = Encoder().to(device=device)
+encoder = Encoder(out_size=10)# .to(device=device)
 if(device.type == "cuda") and (ngpu > 1):
     encoder = torch.nn.DataParallel(encoder, list(range(ngpu)))
 
 print(encoder)
 
-decoder = Decoder().to(device=device)
+decoder = Decoder(in_size=10)#.to(device=device)
 if(device.type=="cuda") and (ngpu > 1):
     decoder = torch.nn.DataParallel(decoder, list(range(ngpu)))
 
