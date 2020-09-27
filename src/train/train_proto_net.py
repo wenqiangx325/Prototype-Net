@@ -72,6 +72,10 @@ optimizer = torch.optim.Adam(net.parameters(), lr=lr, betas=(beta1, 0.999))
 
 def loss_func(labels, targets, images, re_images, codes, prototypes, rate1, rate2, rate3):
     loss_cross = torch.nn.CrossEntropyLoss()
+    test1 = loss_cross(labels, targets)
+    test2 = torch.cdist(re_images.view(64, -1), images.view(64, -1), p=2)**2
+    test3 = torch.min(torch.cdist(prototypes, codes), dim = 0).values
+    test4 = torch.min(torch.cdist(codes, prototypes), dim = 0).values
     
     e = torch.mean(loss_cross(labels, targets))
     r = torch.mean(torch.cdist(re_images, images, p=2)**2)
