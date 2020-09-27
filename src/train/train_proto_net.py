@@ -1,22 +1,23 @@
 import sys
 sys.path.append("src")
-import os
-import pickle
-import datetime
 
-import torch
-import torch.optim
-import torch.nn
-import torchvision.utils
-import torch.utils.data
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import numpy
-
-from utils.loader import load_mnist
-from model.ConvCoder import Encoder, Decoder
 from model.ProtoNet import ProtoNet
+from model.ConvCoder import Encoder, Decoder
+from utils.loader import load_mnist
+import numpy
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+import numpy as np
+import torch.utils.data
+import torchvision.utils
+import torch.nn
+import torch.optim
+import torch
+import datetime
+import pickle
+import os
+
+
 
 dataroot = "data/mnist"
 modelroot = f"models/ProtoNet/{datetime.datetime.now().timestamp().__int__()}"
@@ -70,21 +71,27 @@ print(net)
 
 optimizer = torch.optim.Adam(net.parameters(), lr=lr, betas=(beta1, 0.999))
 
+
 def loss_func(labels, targets, images, re_images, codes, prototypes, rate1, rate2, rate3):
     loss_cross = torch.nn.CrossEntropyLoss()
-    test1 = loss_cross(labels, targets)
-    test2 = torch.cdist(re_images.view(64, -1), images.view(64, -1), p=2)**2
-    test3 = torch.min(torch.cdist(prototypes, codes), dim = 0).values
-    test4 = torch.min(torch.cdist(codes, prototypes), dim = 0).values
-    
+    loss_mse = torch.nn.MSELoss()
+    cc = torch.stack([ torch.tensor([i]).repeat(15) for i in range(0,5)])
+    a1 = torch.stack([torch.min(torch.stack([loss_mse(prototypes[ii], codes[jj]) for jj in range(codes.shape[0])]), dim=0).values for ii in range(prototypes.shape[0])])
+    a2 = torch.stack([torch.min(torch.stack([loss_mse(codes[ii], prototypes[jj]) for jj in range(prototypes.shape[0])]), dim=0).values for ii in range(codes.shape[0])])
+
+
     e = torch.mean(loss_cross(labels, targets))
-    r = torch.mean(torch.cdist(re_images, images, p=2)**2)
-    r1 = torch.mean(torch.min(torch.cdist(prototypes, codes), dim = 0).values)
-    r2 = torch.mean(torch.min(torch.cdist(codes, prototypes), dim = 0).values)
+    # torch.mean(torch.cdist(re_images, images, p=2)**2)
+    r = loss_mse(re_images, images)
+    # torch.mean(torch.min(torch.cdist(prototypes, codes), dim = 0).values)
+    r1 = torch.mean(torch.stack([torch.min(torch.stack([loss_mse(prototypes[ii], codes[jj]) for jj in range(codes.shape[0])]), dim=0).values for ii in range(prototypes.shape[0])]))
+    # torch.mean(torch.min(torch.cdist(codes, prototypes), dim = 0).values)
+    r2 = torch.mean(torch.stack([torch.min(torch.stack([loss_mse(codes[ii], prototypes[jj]) for jj in range(prototypes.shape[0])]), dim=0).values for ii in range(codes.shape[0])]))
 
     loss = e + rate1 * r + rate2 * r1 + rate3 * r2
 
     return loss
+
 
 criterion = loss_func
 
@@ -95,18 +102,20 @@ for epoch in range(num_epochs):
         net.zero_grad()
         real_cpu = data[0].to(device)
         targets = data[1].to(device)
-        
+
         out, code, re_image, prototypes = net(real_cpu)
-        
-        err_net = criterion(out, targets, real_cpu, re_image, code.view(-1, latent_size), prototypes, rate1, rate2, rate3)
-        
+
+        err_net = criterion(out, targets, real_cpu, re_image,
+                            code.view(-1, latent_size), prototypes, rate1, rate2, rate3)
+
         err_net.backward()
         optimizer.step()
 
         losses.append(err_net.item())
 
-        if i%50 == 0 or i == len(dataloader)-1:
-            print(f"[{epoch}/{num_epochs}] [{i}/{len(dataloader)}] loss:{err_net.item()}")
+        if i % 50 == 0 or i == len(dataloader)-1:
+            print(
+                f"[{epoch}/{num_epochs}] [{i}/{len(dataloader)}] loss:{err_net.item()}")
             torch.save(net, os.path.join(modelroot, "net.pt"))
             with open(os.path.join(modelroot, "losses.pk"), "wb") as f:
                 pickle.dump(losses, f)
